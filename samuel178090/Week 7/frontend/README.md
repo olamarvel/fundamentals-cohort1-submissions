@@ -30,20 +30,36 @@ npm run build
 
 ## 🔧 Configuration
 
-Make sure the backend server is running on `http://localhost:3000` before using the frontend.
+### Production
+The live application connects to the deployed backend at `https://codepilot-backend-0638.onrender.com/api`
+
+### Local Development
+Make sure the backend server is running on `http://localhost:3000` before using the frontend locally.
+
+## 🌐 Live Demo
+
+**Live Application:** https://cdpilot.netlify.app/  
+**Backend API:** https://codepilot-backend-0638.onrender.com
 
 ## 📱 Usage
 
-1. **Start the backend server** (see backend README)
-2. **Start the frontend**: `npm run dev`
-3. **Open browser**: Navigate to `http://localhost:5173`
-4. **Test API endpoints**:
+### Live Demo
+1. **Visit**: https://cdpilot.netlify.app/
+2. **Test API endpoints**:
    - Click "Login as Admin" to authenticate
    - View products automatically loaded
    - Create test orders
    - Refresh data as needed
 
+### Local Development
+1. **Start the backend server** (see backend README)
+2. **Start the frontend**: `npm run dev`
+3. **Open browser**: Navigate to `http://localhost:5173`
+
 ## 🛠️ API Integration
+
+### Production API Base URL
+`https://codepilot-backend-0638.onrender.com/api`
 
 The frontend integrates with these backend endpoints:
 - `POST /api/auth/login` - User authentication

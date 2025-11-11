@@ -2,6 +2,13 @@
 
 A comprehensive Node.js Express backend with robust testing strategy, designed for high coverage and confidence in deployment.
 
+## 🌐 Live Deployment
+
+**Backend API:** https://codepilot-backend-0638.onrender.com  
+**Frontend App:** https://cdpilot.netlify.app/
+
+**Health Check:** https://codepilot-backend-0638.onrender.com/health
+
 ## 🏗️ Architecture
 
 The backend follows a modular architecture with clear separation of concerns:

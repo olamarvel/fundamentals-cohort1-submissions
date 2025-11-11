@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -11,7 +12,12 @@ const app = express();
 
 // Security middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://codepilottest.netlify.app', 'https://codepilot-frontend.netlify.app', 'https://cdpilot.netlify.app']
+    : [process.env.FRONTEND_URL || 'http://localhost:5173', 'http://localhost:3000'],
+  credentials: true
+}));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -31,7 +37,12 @@ app.use('/api/orders', orderRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    version: '1.1.0',
+    cors: 'production-ready'
+  });
 });
 
 // Error handling middleware
