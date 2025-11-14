@@ -1,4 +1,14 @@
 # DeployHub Backend
+Test Credentials (Now in README):
+Role	Username	Password	Access Level
+Admin:	admin	  admin123	Full platform access
+User: 	user	  user123  	Limited user access
+Developer:	developer	dev123  	Development features
+Live URLs:
+Frontend: https://deployhubweb.netlify.app/
+
+Backend: https://deployhub-platformbackend.onrender.com/
+
 
 A Node.js Express backend with comprehensive CI/CD pipeline and observability features.
 
