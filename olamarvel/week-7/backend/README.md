@@ -2,8 +2,6 @@
 
 PulseTrack is a comprehensive health monitoring application designed to integrate user fitness data, meal tracking, and medical appointments into a single, cohesive ecosystem. This project was developed as part of the Software Engineering Week 5 Challenge, focusing on robust database modeling, backend API development, and frontend integration.
 
-This repository contains the **[CHOOSE ONE: backend/frontend]** part of the project.
-
 ## Live Demo
 
 The live version of the frontend application is deployed on Vercel and can be viewed here:
