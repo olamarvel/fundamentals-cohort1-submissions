@@ -1,22 +1,31 @@
-name: Backend CI/CD
+name: Backend CI CD
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'olamarvel/week-8/backend/**'
   pull_request:
     branches: [main]
+    paths:
+      - 'olamarvel/week-8/backend/**'
 
 env:
   NODE_VERSION: '20'
 
+defaults:
+  run:
+    working-directory: olamarvel/week-8/backend
+
 jobs:
   ci:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -24,20 +33,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run lint (optional)
+      - name: Lint
         run: npm run lint --if-present
 
-      - name: Run tests
+      - name: Test
         run: npm test
 
-      - name: Build project
-        run: npm run build --if-present
+      - name: Build
+        run: npm run build
 
-      - name: Trigger Render deploy
-        if: github.ref == 'refs/heads/main'
+      - name: Deploy to Render
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           DEPLOY_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-        run: |
-          echo "Triggering Render deploy..."
-          curl -X POST "$DEPLOY_URL"
-          echo "✅ Deploy triggered successfully"
+        run: curl -X POST "$DEPLOY_URL"
