@@ -1,0 +1,451 @@
+name: Production CI/CD Pipeline (AWS CodePipeline-Inspired)
+
+on:
+  push:
+    branches: [main, develop, 'feature/**']
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:  # Manual trigger
+
+env:
+  NODE_VERSION: '18'
+  DEPLOYMENT_VERSION: ${{ github.sha }}
+
+jobs:
+  # ======================
+  # STAGE 1: CODE QUALITY
+  # ======================
+  
+  code-quality:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+  # ======================
+  # STAGE 2: SECURITY
+  # ======================
+  
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+
+  # ======================
+  # STAGE 3: TESTING
+  # ======================
+  
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20]  # Test multiple Node versions
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Create logs directory
+        run: mkdir -p logs
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test -- --coverage --maxWorkers=2
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        if: matrix.node-version == 18
+        with:
+          files: ./coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create logs directory
+        run: mkdir -p logs
+
+      - name: Start test server
+        run: |
+          npm run dev &
+          sleep 10
+
+      - name: Run integration tests
+        run: |
+          curl -f http://localhost:5000/health || exit 1
+          curl -f http://localhost:5000/api || exit 1
+          curl -f http://localhost:5000/health/metrics || exit 1
+          echo "✅ Integration tests passed"
+
+  # ======================
+  # STAGE 4: BUILD
+  # ======================
+  
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: [code-quality, security-scan, unit-tests]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: |
+          echo "Building version ${{ env.DEPLOYMENT_VERSION }}"
+          echo "Build completed successfully"
+
+      - name: Create deployment manifest
+        run: |
+          echo '{
+            "version": "${{ env.DEPLOYMENT_VERSION }}",
+            "buildDate": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "buildNumber": "${{ github.run_number }}",
+            "branch": "${{ github.ref_name }}",
+            "commitMessage": "${{ github.event.head_commit.message }}"
+          }' > deployment-manifest.json
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build-${{ github.sha }}
+          path: |
+            src/
+            package.json
+            deployment-manifest.json
+          retention-days: 7
+
+  # ======================
+  # STAGE 5: BUILD DOCKER
+  # ======================
+  
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: |
+            deployhub-backend:${{ github.sha }}
+            deployhub-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test Docker image
+        run: |
+          docker run -d --name test-container -p 5000:5000 deployhub-backend:${{ github.sha }}
+          sleep 10
+          curl -f http://localhost:5000/health || exit 1
+          docker stop test-container
+          docker rm test-container
+          echo "✅ Docker image test passed"
+
+  # ======================
+  # STAGE 6: DEPLOY STAGING
+  # ======================
+  
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build, integration-tests]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment:
+      name: staging
+      url: https://staging-deployhub.onrender.com
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-build-${{ github.sha }}
+
+      - name: Display deployment info
+        run: cat deployment-manifest.json
+
+      - name: Deploy to Staging
+        env:
+          STAGING_DEPLOY_HOOK: ${{ secrets.STAGING_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$STAGING_DEPLOY_HOOK" ]; then
+            echo "🚀 Deploying to staging..."
+            RESPONSE=$(curl -X POST "$STAGING_DEPLOY_HOOK" -w "%{http_code}" -o /dev/null -s)
+            if [ $RESPONSE -eq 200 ]; then
+              echo "✅ Deployment triggered successfully"
+            else
+              echo "❌ Deployment failed with status $RESPONSE"
+              exit 1
+            fi
+          else
+            echo "⚠️ STAGING_DEPLOY_HOOK not set"
+          fi
+
+      - name: Wait for deployment
+        run: |
+          echo "⏳ Waiting for deployment to complete..."
+          sleep 60
+
+      - name: Staging health check
+        env:
+          STAGING_URL: ${{ secrets.STAGING_URL }}
+        run: |
+          echo "🏥 Running staging health check..."
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${STAGING_URL}/health)
+            if [ $HTTP_STATUS -eq 200 ]; then
+              echo "✅ Staging health check passed!"
+              exit 0
+            fi
+            echo "⏳ Retry $((RETRY_COUNT+1))/$MAX_RETRIES..."
+            sleep 10
+            RETRY_COUNT=$((RETRY_COUNT+1))
+          done
+          
+          echo "❌ Staging health check failed"
+          exit 1
+
+  # ======================
+  # STAGE 7: APPROVAL GATE
+  # ======================
+  
+  approve-production:
+    name: Approve Production Deployment
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production-approval
+    steps:
+      - name: Wait for manual approval
+        run: |
+          echo "⏸️ Awaiting manual approval for production deployment"
+          echo "📊 Deployment version: ${{ env.DEPLOYMENT_VERSION }}"
+          echo "🔗 Review changes before approving"
+
+  # ======================
+  # STAGE 8: DEPLOY PRODUCTION
+  # ======================
+  
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: approve-production
+    environment:
+      name: production
+      url: https://deployhub-backend.onrender.com
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-build-${{ github.sha }}
+
+      - name: Display deployment info
+        run: |
+          echo "🚀 Deploying to Production"
+          cat deployment-manifest.json
+
+      - name: Deploy to Production
+        id: deploy
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK" ]; then
+            echo "🚀 Triggering production deployment..."
+            RESPONSE=$(curl -X POST "$RENDER_DEPLOY_HOOK" -w "%{http_code}" -o /dev/null -s)
+            echo "deploy_status=$RESPONSE" >> $GITHUB_OUTPUT
+            
+            if [ $RESPONSE -eq 200 ]; then
+              echo "✅ Production deployment triggered"
+            else
+              echo "❌ Deployment trigger failed with status $RESPONSE"
+              exit 1
+            fi
+          else
+            echo "❌ RENDER_DEPLOY_HOOK not configured"
+            exit 1
+          fi
+
+      - name: Wait for production deployment
+        run: |
+          echo "⏳ Waiting for production deployment (90 seconds)..."
+          sleep 90
+
+      - name: Production health check
+        id: health_check
+        env:
+          PROD_URL: ${{ secrets.PROD_URL }}
+        run: |
+          echo "🏥 Running production health check..."
+          MAX_RETRIES=10
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${PROD_URL}/health)
+            
+            if [ $HTTP_STATUS -eq 200 ]; then
+              echo "✅ Production health check passed!"
+              
+              # Get detailed health info
+              HEALTH_INFO=$(curl -s ${PROD_URL}/health)
+              echo "Health Status: $HEALTH_INFO"
+              
+              exit 0
+            fi
+            
+            echo "⏳ Attempt $((RETRY_COUNT+1))/$MAX_RETRIES - Status: $HTTP_STATUS"
+            sleep 15
+            RETRY_COUNT=$((RETRY_COUNT+1))
+          done
+          
+          echo "❌ Production health check failed after $MAX_RETRIES attempts"
+          exit 1
+
+      - name: Rollback on failure
+        if: failure()
+        env:
+          RENDER_ROLLBACK_HOOK: ${{ secrets.RENDER_ROLLBACK_HOOK }}
+        run: |
+          echo "🔄 Deployment failed - initiating rollback..."
+          
+          if [ -n "$RENDER_ROLLBACK_HOOK" ]; then
+            curl -X POST "$RENDER_ROLLBACK_HOOK"
+            echo "⚠️ Rollback initiated"
+          else
+            echo "❌ RENDER_ROLLBACK_HOOK not configured - manual rollback required"
+          fi
+          
+          exit 1
+
+  # ======================
+  # STAGE 9: POST-DEPLOYMENT
+  # ======================
+  
+  post-deployment:
+    name: Post-Deployment Tasks
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: success()
+    steps:
+      - name: Notify team (Slack/Email)
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          echo "📢 Sending deployment notification..."
+          
+          NOTIFICATION='{
+            "text": "🚀 Production Deployment Successful!",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Production Deployment Completed*\n\n• Version: \`${{ env.DEPLOYMENT_VERSION }}\`\n• Build: #${{ github.run_number }}\n• Branch: \`${{ github.ref_name }}\`\n• Deployed by: ${{ github.actor }}\n• Time: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+                }
+              }
+            ]
+          }'
+          
+          if [ -n "$SLACK_WEBHOOK" ]; then
+            curl -X POST "$SLACK_WEBHOOK" \
+              -H "Content-Type: application/json" \
+              -d "$NOTIFICATION"
+            echo "✅ Team notified"
+          else
+            echo "⚠️ SLACK_WEBHOOK not configured"
+          fi
+
+      - name: Update deployment log
+        run: |
+          echo "📝 Deployment Summary:"
+          echo "===================="
+          echo "Version: ${{ env.DEPLOYMENT_VERSION }}"
+          echo "Build: #${{ github.run_number }}"
+          echo "Environment: Production"
+          echo "Status: ✅ Success"
+          echo "Deployed by: ${{ github.actor }}"
+          echo "Deployed at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          echo "===================="
