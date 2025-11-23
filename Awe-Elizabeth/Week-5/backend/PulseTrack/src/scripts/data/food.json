@@ -1,0 +1,122 @@
+[
+  {
+    "foodName": "Apple",
+    "nutrients": {
+      "calories": 52,
+      "protein": 0.3,
+      "fat": 0.2,
+      "carbohydrate": 14,
+      "vitamins": 5,
+      "water": 86
+    },
+    "unit": "100g"
+  },
+  {
+    "foodName": "Chicken Breast",
+    "nutrients": {
+      "calories": 165,
+      "protein": 31,
+      "fat": 3.6,
+      "carbohydrate": 0,
+      "vitamins": 2,
+      "water": 65
+    },
+    "unit": "100g"
+  },
+  {
+    "foodName": "Broccoli",
+    "nutrients": {
+      "calories": 34,
+      "protein": 2.8,
+      "fat": 0.4,
+      "carbohydrate": 7,
+      "vitamins": 6,
+      "water": 89
+    },
+    "unit": "100g"
+  },
+  {
+    "foodName": "White Rice",
+    "nutrients": {
+      "calories": 130,
+      "protein": 2.7,
+      "fat": 0.3,
+      "carbohydrate": 28,
+      "vitamins": 1,
+      "water": 68
+    },
+    "unit": "100g"
+  },
+  {
+    "foodName": "Salmon",
+    "nutrients": {
+      "calories": 208,
+      "protein": 20,
+      "fat": 13,
+      "carbohydrate": 0,
+      "vitamins": 4,
+      "water": 64
+    },
+    "unit": "100g"
+  },
+  {
+    "foodName": "Banana",
+    "nutrients": {
+      "calories": 89,
+      "protein": 1.1,
+      "fat": 0.3,
+      "carbohydrate": 23,
+      "vitamins": 5,
+      "water": 74
+    },
+    "unit": "100g"
+  },
+  {
+    "foodName": "Almonds",
+    "nutrients": {
+      "calories": 579,
+      "protein": 21,
+      "fat": 50,
+      "carbohydrate": 22,
+      "vitamins": 3,
+      "water": 4
+    },
+    "unit": "100g"
+  },
+  {
+    "foodName": "Milk (Whole)",
+    "nutrients": {
+      "calories": 61,
+      "protein": 3.2,
+      "fat": 3.3,
+      "carbohydrate": 4.8,
+      "vitamins": 5,
+      "water": 88
+    },
+    "unit": "100ml"
+  },
+  {
+    "foodName": "Egg (Boiled)",
+    "nutrients": {
+      "calories": 155,
+      "protein": 13,
+      "fat": 11,
+      "carbohydrate": 1.1,
+      "vitamins": 5,
+      "water": 75
+    },
+    "unit": "100g"
+  },
+  {
+    "foodName": "Avocado",
+    "nutrients": {
+      "calories": 160,
+      "protein": 2,
+      "fat": 15,
+      "carbohydrate": 9,
+      "vitamins": 6,
+      "water": 73
+    },
+    "unit": "100g"
+  }
+]

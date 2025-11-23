@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "name": "Chukwuemeka Okafor",
+    "username": "Chukzy",
+    "email": "chukwuemeka.okafor@sterling.ng",
+    "company": { "name": "Sterling Bank Plc" }
+  },
+  {
+    "id": 2,
+    "name": "Aisha Mohammed",
+    "username": "AishM",
+    "email": "aisha.mohammed@kuda.com",
+    "company": { "name": "Kuda Microfinance Bank" }
+  },
+  {
+    "id": 3,
+    "name": "Olumide Adebayo",
+    "username": "OluAde",
+    "email": "olumide@flutterwave.com",
+    "company": { "name": "Flutterwave" }
+  },
+  {
+    "id": 4,
+    "name": "Fatima Yusuf",
+    "username": "FatimaY",
+    "email": "f.yusuf@paystack.com",
+    "company": { "name": "Paystack Payments Limited" }
+  },
+  {
+    "id": 5,
+    "name": "Tunde Balogun",
+    "username": "Tbalo",
+    "email": "tunde.balogun@accessbankplc.com",
+    "company": { "name": "Access Bank Nigeria" }
+  },
+  {
+    "id": 6,
+    "name": "Chioma Eze",
+    "username": "ChiomaEze",
+    "email": "chioma@gtbank.com",
+    "company": { "name": "Guaranty Trust Bank" }
+  },
+  {
+    "id": 7,
+    "name": "Ibrahim Musa",
+    "username": "IbraMusa",
+    "email": "ibrahim.musa@zenithbank.com",
+    "company": { "name": "Zenith Bank Plc" }
+  },
+  {
+    "id": 8,
+    "name": "Ngozi Okonkwo",
+    "username": "NgoziOK",
+    "email": "ngozi.okonkwo@opay-ng.com",
+    "company": { "name": "OPay Digital Services" }
+  },
+  {
+    "id": 9,
+    "name": "Adeola Sowemimo",
+    "username": "AdeolaS",
+    "email": "adeola@moniepoint.com",
+    "company": { "name": "Moniepoint MFB" }
+  },
+  {
+    "id": 10,
+    "name": "Yusuf Abdullahi",
+    "username": "YusAbd",
+    "email": "yusuf.abdullahi@palmplay.ng",
+    "company": { "name": "PalmPay Limited" }
+  }
+]

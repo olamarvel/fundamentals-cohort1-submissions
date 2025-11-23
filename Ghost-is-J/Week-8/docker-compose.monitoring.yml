@@ -1,0 +1,45 @@
+version: '3.9'
+
+services:
+  backend:
+    build: ./backend
+    container_name: backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - monitor-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - monitor-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      # - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      # - GF_DASHBOARDS_JSON_ENABLED=true
+    volumes:
+      - grafana-data:/var/lib/grafana
+    # - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    # - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - monitor-net
+
+networks:
+  monitor-net:
+    driver: bridge
+
+volumes:
+  grafana-data:

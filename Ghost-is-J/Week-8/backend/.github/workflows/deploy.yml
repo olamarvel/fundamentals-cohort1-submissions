@@ -1,0 +1,32 @@
+name: Backend CI/CD with Monitoring Stack
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run backend tests
+        working-directory: backend
+        run: npm test
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${{secrets.DOCKER_HUB_USERNAME}}/week8-backend:latest ./backend
+          docker login -u ${{secrets.DOCKER_HUB_USERNAME}} -p ${{secrets.DOCKER_HUB_ACCESS_TOKEN}}
+          docker push ${{secrets.DOCKER_HUB_USERNAME}}/week8-backend:latest

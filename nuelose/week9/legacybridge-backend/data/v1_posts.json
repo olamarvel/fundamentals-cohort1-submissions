@@ -1,0 +1,142 @@
+[
+  {
+    "userId": 1,
+    "id": 1,
+    "title": "Payment for order #12400",
+    "body": "Payment received and processed.",
+    "amount": 228630.0
+  },
+  {
+    "userId": 2,
+    "id": 2,
+    "title": "Refund for order #12345",
+    "body": "Customer requested refund - processed.",
+    "amount": 416120.0
+  },
+  {
+    "userId": 3,
+    "id": 3,
+    "title": "Payment for invoice INV-2025-0871",
+    "body": "Airtime top-up completed.",
+    "amount": 15000.0
+  },
+  {
+    "userId": 1,
+    "id": 4,
+    "title": "Payment for order #12512",
+    "body": "Successful transfer from savings wallet.",
+    "amount": 875000.5
+  },
+  {
+    "userId": 4,
+    "id": 5,
+    "title": "Refund for order #12001 - wrong size",
+    "body": "Refund approved and sent.",
+    "amount": 125900.0
+  },
+  {
+    "userId": 5,
+    "id": 6,
+    "title": "Payment electricity bill NEPA-44567",
+    "body": "Bill settled in full.",
+    "amount": 45780.0
+  },
+  {
+    "userId": 6,
+    "id": 7,
+    "title": "Payment for order #12999",
+    "body": "Fashion purchase.",
+    "amount": 342000.75
+  },
+  {
+    "userId": 7,
+    "id": 8,
+    "title": "Refund for cancelled flight ABJ-LOS",
+    "body": "Full refund processed.",
+    "amount": 189000.0
+  },
+  {
+    "userId": 8,
+    "id": 9,
+    "title": "Payment betting wallet top-up",
+    "body": "Weekend games loading.",
+    "amount": 50000.0
+  },
+  {
+    "userId": 2,
+    "id": 10,
+    "title": "Payment school fees - Term 1",
+    "body": "Paid via school portal.",
+    "amount": 1250000.0
+  },
+  {
+    "userId": 9,
+    "id": 11,
+    "title": "Refund for double charge order #12777",
+    "body": "Duplicate transaction reversed.",
+    "amount": 416000.0
+  },
+  {
+    "userId": 10,
+    "id": 12,
+    "title": "Payment for groceries Jara Mall",
+    "body": "Weekly shopping.",
+    "amount": 98750.25
+  },
+  {
+    "userId": 3,
+    "id": 13,
+    "title": "Payment car servicing",
+    "body": "Toyota Camry full service.",
+    "amount": 278000.0
+  },
+  {
+    "userId": 4,
+    "id": 14,
+    "title": "Refund for order #13123 - damaged item",
+    "body": "Partial refund issued.",
+    "amount": 55000.0
+  },
+  {
+    "userId": 5,
+    "id": 15,
+    "title": "Payment DSTV subscription",
+    "body": "Premium package renewed.",
+    "amount": 25200.0
+  },
+  {
+    "userId": 6,
+    "id": 16,
+    "title": "Payment house rent Q4",
+    "body": "Annual rent advance.",
+    "amount": 3600000.0
+  },
+  {
+    "userId": 1,
+    "id": 17,
+    "title": "Refund betting stake",
+    "body": "Match cancelled.",
+    "amount": 75000.0
+  },
+  {
+    "userId": 8,
+    "id": 18,
+    "title": "Payment for data bundle 100GB",
+    "body": "MTN night plan.",
+    "amount": 30000.0
+  },
+  {
+    "userId": 9,
+    "id": 19,
+    "title": "Payment medical bills LUTH",
+    "body": "Surgery deposit.",
+    "amount": 1550000.0
+  },
+  {
+    "userId": 10,
+    "id": 20,
+    "title": "Refund for cancelled hotel booking",
+    "body": "Lagos Continental Hotel.",
+    "amount": 298000.0
+  }
+]

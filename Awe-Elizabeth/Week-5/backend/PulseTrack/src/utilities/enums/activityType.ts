@@ -1,0 +1,20 @@
+export enum ActivityType{
+  WALKING = "walking",
+  RUNNING = "running",
+  CYCLING = "cycling",
+  SWIMMING = "swimming",
+  YOGA = "yoga",
+  STRENGTH = "strength_training",
+  HIKING = "hiking",
+  MEDITATION = "meditation",
+  FOOTBALL = "football",
+  BASKETBALL = "basketball",
+  TENNIS = "tennis",
+  SLEEP = "sleep",
+  STEPS = "steps",
+  HEART_RATE = "heart_rate",
+  BLOOD_PRESSURE = "blood_pressure",
+  BLOOD_GLUCOSE = "blood_glucose",
+  CALORIES_BURNED = "calories_burned",
+  OTHER = "other"
+}

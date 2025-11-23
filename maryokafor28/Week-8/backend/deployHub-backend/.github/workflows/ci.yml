@@ -1,0 +1,211 @@
+name: CI/CD Pipeline for Metric & Health Services
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  # ==========================
+  #  Lint & Type Check
+  # ==========================
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+  # ==========================
+  #  Unit Tests
+  # ==========================
+  test-services:
+    name: Run Unit Tests (Metric & Health)
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Run all unit tests
+      - name: Run Unit Tests
+        env:
+          NODE_ENV: test
+        run: npm test -- src/tests/unit
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  # ==========================
+  #  Integration Tests (optional now)
+  # ==========================
+  integration-tests:
+    name: Run Integration Tests
+    runs-on: ubuntu-latest
+    needs: test-services
+    if: false # temporarily disable until ready
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Integration Tests
+        env:
+          NODE_ENV: test
+        run: npm run test:integration
+
+      - name: Upload integration test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-report
+          path: coverage/
+          retention-days: 7
+
+  # ==========================
+  #  Build
+  # ==========================
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: [test-services]
+    # Add integration-tests later when enabled
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          echo " Build completed successfully"
+          ls -la dist/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+          retention-days: 7
+
+  # ==========================
+  #  Deploy
+  # ==========================
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Trigger Render Deployment
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          echo " Triggering deployment to Render..."
+
+          response=$(curl -X POST \
+            "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
+            -H "Authorization: Bearer ${RENDER_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -w "\n%{http_code}" \
+            -s)
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "Response: $body"
+
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo " Deployment triggered successfully!"
+            echo "Check status at: https://dashboard.render.com"
+          else
+            echo " Deployment failed with HTTP status: $http_code"
+            exit 1
+          fi
+
+  # ==========================
+  #  Summary
+  # ==========================
+  summary:
+    name: Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, test-services, build, deploy]
+    if: always()
+
+    steps:
+      - name: Check pipeline status
+        run: |
+          echo "================================"
+          echo " CI Pipeline Summary"
+          echo "================================"
+          echo "Lint & Type Check: ${{ needs.lint-and-typecheck.result }}"
+          echo "Unit Tests: ${{ needs.test-services.result }}"
+          echo "Build: ${{ needs.build.result }}"
+          echo "Deploy: ${{ needs.deploy.result }}"
+          echo "================================"
+
+          if [ "${{ needs.lint-and-typecheck.result }}" != "success" ] || \
+             [ "${{ needs.test-services.result }}" != "success" ] || \
+             [ "${{ needs.build.result }}" != "success" ]; then
+            echo " Pipeline failed!"
+            exit 1
+          else
+            echo " All checks passed!"
+            if [ "${{ needs.deploy.result }}" == "success" ]; then
+              echo "Deployment successful!"
+            fi
+          fi
