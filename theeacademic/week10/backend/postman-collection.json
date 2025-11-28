@@ -1,0 +1,325 @@
+{
+  "info": {
+    "name": "SyncForge Backend API",
+    "description": "API collection for SyncForge distributed team collaboration platform",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "health"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"status\": \"OK\",\n  \"timestamp\": \"2024-01-20T10:30:00.000Z\",\n  \"version\": \"v1\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get All Projects",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/projects",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "projects"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"1\",\n      \"name\": \"SyncForge Platform\",\n      \"description\": \"Main collaboration platform for distributed teams\",\n      \"status\": \"active\",\n      \"createdAt\": \"2024-01-15T10:00:00Z\",\n      \"updatedAt\": \"2024-01-20T14:30:00Z\",\n      \"teamMembers\": [\"1\", \"2\", \"3\"]\n    }\n  ],\n  \"count\": 1\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Projects by Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/projects?status=active",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "projects"],
+          "query": [
+            {
+              "key": "status",
+              "value": "active"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Project by ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/projects/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "projects", "1"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "1"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"1\",\n    \"name\": \"SyncForge Platform\",\n    \"description\": \"Main collaboration platform for distributed teams\",\n    \"status\": \"active\",\n    \"createdAt\": \"2024-01-15T10:00:00Z\",\n    \"updatedAt\": \"2024-01-20T14:30:00Z\",\n    \"teamMembers\": [\"1\", \"2\", \"3\"]\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Create Project",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"New Project\",\n  \"description\": \"A new project for the team\",\n  \"teamMembers\": [\"1\", \"2\"]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/projects",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "projects"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Project\",\n  \"description\": \"A new project for the team\",\n  \"teamMembers\": [\"1\", \"2\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects"]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"4\",\n    \"name\": \"New Project\",\n    \"description\": \"A new project for the team\",\n    \"status\": \"active\",\n    \"createdAt\": \"2024-01-20T15:00:00Z\",\n    \"updatedAt\": \"2024-01-20T15:00:00Z\",\n    \"teamMembers\": [\"1\", \"2\"]\n  },\n  \"message\": \"Project created successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update Project",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Updated Project Name\",\n  \"description\": \"Updated project description\",\n  \"status\": \"completed\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/projects/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "projects", "1"]
+        }
+      }
+    },
+    {
+      "name": "Get All Team Members",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/teams/members",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "teams", "members"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/teams/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teams", "members"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"1\",\n      \"name\": \"Alice Johnson\",\n      \"email\": \"alice@syncforge.com\",\n      \"role\": \"developer\",\n      \"timezone\": \"UTC-8\",\n      \"isActive\": true\n    }\n  ],\n  \"count\": 1\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Team Members by Role",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/teams/members?role=developer",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "teams", "members"],
+          "query": [
+            {
+              "key": "role",
+              "value": "developer"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Team Member by ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/teams/members/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "teams", "members", "1"]
+        }
+      }
+    },
+    {
+      "name": "Get Timezones",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/teams/timezones",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "teams", "timezones"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/teams/timezones",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teams", "timezones"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"success\": true,\n  \"data\": [\"UTC-8\", \"UTC+8\", \"UTC-5\", \"UTC+5:30\", \"UTC+2\"],\n  \"count\": 5\n}"
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    }
+  ]
+}
