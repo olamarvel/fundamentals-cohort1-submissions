@@ -1,0 +1,149 @@
+{
+  "info": {
+    "name": "LegacyBridge API",
+    "description": "API collection for LegacyBridge integration service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/health",
+          "host": ["{{base_url}}"],
+          "path": ["api", "health"]
+        }
+      }
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "Get All Customers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v2"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v2/customers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "customers"]
+            }
+          }
+        },
+        {
+          "name": "Get Customer by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v2"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v2/customers/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "customers", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Get All Payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v2"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v2/payments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "payments"]
+            }
+          }
+        },
+        {
+          "name": "Get Payments by Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v2"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v2/payments?status=completed",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "payments"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "completed"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Payment by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v2"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v2/payments/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "payments", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Customer Payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "api-version",
+                "value": "v2"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v2/customers/1/payments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "customers", "1", "payments"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}
+
+
