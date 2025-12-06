@@ -1,0 +1,349 @@
+{
+  "info": {
+    "name": "PayVerse API",
+    "description": "Distributed Payments Platform - REST API Documentation\n\nTechnical Trade-Offs:\n- SQL (PostgreSQL) for ACID compliance\n- REST for wide compatibility\n- JWT for stateless authentication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{BASE_URL}}/health",
+          "host": ["{{BASE_URL}}"],
+          "path": ["health"]
+        },
+        "description": "Check if the API server is running"
+      }
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('TOKEN', response.data.token);",
+                  "    pm.environment.set('USER_ID', response.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"role\": \"user\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/auth/register",
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new user account"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('TOKEN', response.data.token);",
+                  "    pm.environment.set('USER_ID', response.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@payverse.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/auth/login",
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with existing credentials"
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/auth/profile",
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Get current user profile (requires authentication)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "Create Transaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverEmail\": \"bob@payverse.com\",\n  \"amount\": 50.00,\n  \"type\": \"transfer\",\n  \"description\": \"Payment for services\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/transactions",
+              "host": ["{{BASE_URL}}"],
+              "path": ["transactions"]
+            },
+            "description": "Create a new transaction (transfer or payment)"
+          }
+        },
+        {
+          "name": "Deposit Funds",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100.00\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/transactions/deposit",
+              "host": ["{{BASE_URL}}"],
+              "path": ["transactions", "deposit"]
+            },
+            "description": "Deposit funds into user account"
+          }
+        },
+        {
+          "name": "Get Transaction History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/transactions?page=1&limit=10",
+              "host": ["{{BASE_URL}}"],
+              "path": ["transactions"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "completed",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "transfer",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get user's transaction history with pagination"
+          }
+        },
+        {
+          "name": "Get Transaction by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/transactions/:id",
+              "host": ["{{BASE_URL}}"],
+              "path": ["transactions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "transaction-uuid-here"
+                }
+              ]
+            },
+            "description": "Get specific transaction details"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Cases",
+      "item": [
+        {
+          "name": "Insufficient Balance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverEmail\": \"bob@payverse.com\",\n  \"amount\": 999999.00,\n  \"type\": \"transfer\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/transactions",
+              "host": ["{{BASE_URL}}"],
+              "path": ["transactions"]
+            },
+            "description": "Test insufficient balance error"
+          }
+        },
+        {
+          "name": "Invalid Receiver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverEmail\": \"nonexistent@example.com\",\n  \"amount\": 50.00,\n  \"type\": \"transfer\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/transactions",
+              "host": ["{{BASE_URL}}"],
+              "path": ["transactions"]
+            },
+            "description": "Test receiver not found error"
+          }
+        },
+        {
+          "name": "Validation Error",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverEmail\": \"invalid-email\",\n  \"amount\": -50.00\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/transactions",
+              "host": ["{{BASE_URL}}"],
+              "path": ["transactions"]
+            },
+            "description": "Test validation error handling"
+          }
+        },
+        {
+          "name": "Unauthorized Access",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/auth/profile",
+              "host": ["{{BASE_URL}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Test unauthorized access (no token)"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "TOKEN",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "USER_ID",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
