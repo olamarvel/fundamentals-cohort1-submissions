@@ -1,0 +1,90 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="PayVerse-Architecture" name="System Architecture">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Client Layer -->
+        <mxCell id="2" value="CLIENT LAYER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="80" y="40" width="1000" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- Browser Client -->
+        <mxCell id="3" value="React + Vite&lt;br&gt;(Browser)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="120" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Mobile App -->
+        <mxCell id="4" value="Mobile App&lt;br&gt;(Future)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Third Party -->
+        <mxCell id="5" value="Merchant API&lt;br&gt;(Third-Party)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="440" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- API Gateway Layer -->
+        <mxCell id="6" value="API GATEWAY LAYER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="80" y="240" width="1000" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- Express Server -->
+        <mxCell id="7" value="Express.js Server&lt;br&gt;- CORS&lt;br&gt;- Helmet (Security)&lt;br&gt;- Rate Limiting&lt;br&gt;- Compression" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="240" y="320" width="160" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- Auth Layer -->
+        <mxCell id="8" value="AUTHENTICATION LAYER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="80" y="480" width="1000" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- JWT Middleware -->
+        <mxCell id="9" value="JWT Middleware&lt;br&gt;- Verify Signature&lt;br&gt;- Extract User Context&lt;br&gt;- Auto Token Refresh" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="240" y="560" width="160" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- Application Layer -->
+        <mxCell id="10" value="APPLICATION LAYER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="80" y="700" width="1000" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- Auth Service -->
+        <mxCell id="11" value="Auth Service&lt;br&gt;- Register&lt;br&gt;- Login&lt;br&gt;- Refresh Token&lt;br&gt;- Logout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;" vertex="1" parent="1">
+          <mxGeometry x="160" y="780" width="140" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- Transaction Service -->
+        <mxCell id="12" value="Transaction Service&lt;br&gt;- Create Payment&lt;br&gt;- Get History&lt;br&gt;- Calculate Stats&lt;br&gt;- Webhooks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;" vertex="1" parent="1">
+          <mxGeometry x="340" y="780" width="160" height="100" as="geometry" />
+        </mxCell>
+        
+        <!-- Data Layer -->
+        <mxCell id="13" value="DATA LAYER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#cdeb8b;strokeColor=#36393d;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="80" y="940" width="1000" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- PostgreSQL -->
+        <mxCell id="14" value="PostgreSQL Database&lt;br&gt;- users&lt;br&gt;- transactions&lt;br&gt;- payment_methods&lt;br&gt;- audit_logs" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#b0e3e6;strokeColor=#0e8088;" vertex="1" parent="1">
+          <mxGeometry x="240" y="1020" width="180" height="120" as="geometry" />
+        </mxCell>
+        
+        <!-- Connections -->
+        <mxCell id="15" value="" style="endArrow=classic;html=1;entryX=0.5;entryY=0;exitX=0.5;exitY=1;" edge="1" parent="1" source="3" target="7">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="180" y="200" as="sourcePoint" />
+            <mxPoint x="230" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="16" value="HTTPS" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="15">
+          <mxGeometry x="-0.2" y="2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
