@@ -18,8 +18,11 @@ app.use(express.urlencoded({ extended: true }));
 
 import notifyRoutes from "./routes/notify";
 
-app.use("/api/notify", notifyRoutes)
-
+app.use("/api", notifyRoutes)
+app.get("/",(req,res)=>{
+  console.log("hit")
+  res.send("hello")
+})
 app.use(errorHandler);
 
 export default app;

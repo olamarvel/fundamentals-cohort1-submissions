@@ -1,16 +1,24 @@
-import {Schema,model} from "mongoose";
+import mongoose from 'mongoose';
 
 export interface JOB{
-  title: string;
-  description: string;
+  type: string;
+  to: string;
+  content:string;
   status: string;
+  retries: number;
 }
 
-const Jobschema = new Schema({ 
-  title: { type: String, maxlength: 150, required: true },
-  description: { type: String, maxlength: 2000 },
-  status: { type: String, enum: ["Queued", "Pending", "Finished"], default: "Queued" },
+
+const JobSchema = new mongoose.Schema({
+    type: String, // 'email' or 'sms'
+    to: String,
+    content: String,
+    status: { 
+        type: String, 
+        enum: ['PENDING', 'SENT', 'FAILED'], 
+        default: 'PENDING' 
+    },
+    retries: { type: Number, default: 0 }
 }, { timestamps: true });
 
-const Job = model("Job", Jobschema);
-export default Job
+export default mongoose.model('Job', JobSchema);

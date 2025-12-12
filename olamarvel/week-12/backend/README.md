@@ -1,301 +1,169 @@
-# 🔒 Secure Task Management API (Week 3 SE Challenge)
+# Scalable Notification Delivery System 🚀
 
-## 🚀 Overview
+  
 
-This project is a **secure, role-based Task Management API** built with **Node.js (Express)** and **MongoDB**, implementing:
+## 📖 Overview
 
-* **JWT Authentication**
-* **Role-Based Access Control (RBAC)**
-* **Refresh Token Rotation**
-* **Account Lockout on Failed Logins**
-* **Input Validation and Data Sanitization**
-* **OWASP A01 (Broken Access Control)** and **A03 (Injection)** mitigations.
+The **WaveCom Notification System** is a distributed, fault-tolerant microservices architecture designed to handle high-throughput transactional notifications (Email/SMS). Built to scale to **50,000 notifications per minute**, it leverages an asynchronous event-driven architecture to decouple message ingestion from processing.
 
-The backend works hand-in-hand with the **React-Vite frontend client** in this project to demonstrate end-to-end secure API usage.
+This repository contains:
 
----
+  * **Producer API:** A high-performance Express.js entry point.
+  * **Worker Service:** A horizontally scalable consumer fleet.
+  * **Dashboard:** A React-based real-time control center for load testing and monitoring.
 
-## 🧩 Features
+-----
 
-| Feature                              | Description                                                               |
-| ------------------------------------ | ------------------------------------------------------------------------- |
-| **JWT Authentication**               | Uses Access & Refresh tokens with rotation and expiry.                    |
-| **RBAC (Role-Based Access Control)** | Two roles: `user` and `admin`. Each role has different route permissions. |
-| **Account Lockout Policy**           | Users get locked for **30 minutes** after 3 failed login attempts.        |
-| **Secure Logout & Token Revocation** | Refresh tokens are blacklisted on logout.                                 |
-| **Data Validation**                  | All inputs (auth + tasks) are sanitized manually (no external validator). |
-| **Helmet Integration**               | Adds secure HTTP headers for protection against common web exploits.      |
-| **Search & Filter API**              | Supports paginated search and filtering by task attributes.               |
-| **MongoDB Integration**              | Stores users, tasks, and token blacklists securely.                       |
-| **Comprehensive Tests**              | Jest-based test coverage for authentication and task routes.              |
+## 🏗 Architecture
 
----
+The system follows a **Producer-Consumer** pattern using RabbitMQ as the message broker.
+![Flow Diagram](flow.png)
 
-## 🏗️ Architecture
 
+### Components & Responsibilities
+
+| Component | Responsibility | Tech Stack |
+| :--- | :--- | :--- |
+| **API Service** | Ingests requests, validates payloads, logs initial state to DB, and acts as the RabbitMQ Producer. Responds immediately with `202 Accepted`. | Node.js, Express |
+| **RabbitMQ** | Acts as a durable buffer / shock absorber. Ensures messages are ordered and persisted until processed. | RabbitMQ (AMQP) |
+| **Worker Service** | Consumes messages, handles 3rd-party API latency, manages retries, and updates final status. **Stateless and horizontally scalable.** | Node.js, amqplib |
+| **MongoDB** | Persistent storage for job status, logs, and audit trails. | MongoDB, Mongoose |
+| **Frontend** | Load generator and real-time status dashboard. | React, Vite |
+
+-----
+
+## 🛡️ Design Defense
+
+### 1\. Why this Architecture?
+
+We chose an **Asynchronous Queue-Based Architecture** over a monolithic REST API to ensure high availability.
+
+  * **Decoupling:** The API ingestion rate is not limited by the speed of the email/SMS provider. The API can accept requests in milliseconds, while the actual sending takes seconds.
+  * **Reliability:** By persisting jobs to MongoDB *before* queueing, and using RabbitMQ's **Persistent Messages**, we ensure zero data loss even if the broker crashes.
+
+### 2\. How does it handle 50,000 notifications/min?
+
+Achieving \~833 requests/second requires preventing the Node.js event loop from blocking.
+
+  * **Horizontal Scaling:** The Worker Service is designed to be run as multiple independent instances (`npm run scale:workers`). RabbitMQ's **Round-Robin Dispatch** distributes the load evenly across all active workers.
+  * **Prefetch Count:** We configured `channel.prefetch(5)` on consumers. This ensures fair distribution; a worker is never overwhelmed with too many unacknowledged messages, keeping RAM usage predictable.
+  * **Connection Pooling:** Workers maintain a persistent connection to MongoDB, eliminating the overhead of the TCP handshake for every single notification.
+
+### 3\. Fault Tolerance & Graceful Degradation
+
+  * **Message Durability:** Queues are declared `durable: true` and messages `persistent: true`.
+  * **Acknowledgement Mode:** Workers use manual acknowledgments (`channel.ack`). If a worker crashes mid-process, RabbitMQ detects the lost connection and re-queues the message for another worker.
+  * **Retry Logic:** Failed deliveries (e.g., 3rd party downtime) are handled via `channel.nack(msg, false, true)` (requeue) or routed to a Dead Letter Exchange (DLX) for delayed retry.
+
+-----
+
+## 📡 API Documentation
+
+### 1\. Send Notification
+
+**Endpoint:** `POST /api/notify`
+**Description:** Queues a new notification job.
+
+**Payload:**
+
+```json
+{
+  "type": "email",
+  "to": "user@example.com",
+  "content": "Your OTP is 1234"
+}
 ```
-backend/
-├── src/
-│   ├── config/
-│   │   └── db.ts
-│   ├── controllers/
-│   │   ├── authController.ts
-│   │   └── taskController.ts
-│   ├── middlewares/
-│   │   ├── authMiddleware.ts
-│   │   └── roleMiddleware.ts
-│   ├── models/
-│   │   ├── User.ts
-│   │   ├── Task.ts
-│   │   └── TokenBlacklist.ts
-│   ├── routes/
-│   │   ├── authRoutes.ts
-│   │   └── taskRoutes.ts
-│   ├── utils/
-│   │   └── sanitizer.ts
-│   ├── app.ts
-│   └── server.ts
-├── tests/
-│   ├── auth.test.ts
-│   ├── tasks.test.ts
-│   └── setup.ts
-├── .env
-├── package.json
-└── README.md
+
+**Response (202 Accepted):**
+
+```json
+{
+  "message": "Notification job accepted and queued.",
+  "jobId": "a1b2c3d4-..." 
+}
 ```
 
----
+### 2\. Check Status
 
-## ⚙️ Setup & Installation
+**Endpoint:** `GET /api/status/:id`
+**Description:** Polls the real-time status of a specific job.
 
-### 1️⃣ Clone the Repository
+**Response:**
+
+```json
+{
+  "jobId": "a1b2c3d4-...",
+  "status": "SENT",  // PENDING, SENT, or FAILED
+  "updatedAt": "2025-12-12T10:00:00Z"
+}
+```
+
+-----
+
+## 🗄️ Database Schema
+
+**Collection:** `jobs`
+
+```javascript
+{
+  _id: ObjectId("..."),
+  type: String,         // 'email' | 'sms'
+  to: String,
+  content: String,
+  status: String,       // Enum: ['PENDING', 'SENT', 'FAILED']
+  retries: Number,      // Default: 0
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+-----
+
+## 🚀 Setup & Usage
+
+### Prerequisites
+
+  * Node.js v18+
+  * RabbitMQ Server (Running on localhost:5672)
+  * MongoDB (Running on localhost:27017)
+
+### Installation
+
+1.  **Clone the repo:**
+    ```bash
+    git clone https://github.com/olamarvel/fundamentals-cohort1-submissions.git
+    cd olamrvel/week-12
+    ```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    cd frontend && npm install
+    ```
+
+### Running the System
+
+We use **concurrently** to spin up the entire architecture (API + 10 Workers) in one command.
 
 ```bash
-git clone https://github.com/yourusername/secure-task-api.git
-cd secure-task-api
+# In the root folder
+npm run dev:full
 ```
 
-### 2️⃣ Install Dependencies
+### Running the Load Test (Dashboard)
+
+1.  Navigate to the frontend: `cd frontend`
+2.  Start the UI: `npm run dev`
+3.  Open `http://localhost:5173`
+4.  Set **Total Requests** to `5000` and **Batch Size** to `50`.
+5.  Click **🚀 Start Test** and watch the workers drain the queue in real-time.
+
+-----
+
+### 🧪 Manual Testing (Bash)
+
+You can also run the included CLI stress tester:
 
 ```bash
-npm install
+chmod +x blast_v2.sh
+./blast_v2.sh
 ```
-
-### 3️⃣ Configure Environment Variables
-
-Create a `.env` file in the root directory with:
-
-```env
-PORT=5000
-MONGO_URI=mongodb://127.0.0.1:27017/secure_task_api
-ACCESS_TOKEN_SECRET=supersecretaccesstoken
-REFRESH_TOKEN_SECRET=supersecretrefreshtoken
-TOKEN_EXPIRY=15m
-REFRESH_TOKEN_EXPIRY=7d
-LOCK_DURATION_MINUTES=30
-```
-
-### 4️⃣ Run the Development Server
-
-```bash
-npm run dev
-```
-
-Server runs on **[http://localhost:5000](http://localhost:5000)**
-
----
-
-## 🧪 Testing
-
-To run all tests:
-
-```bash
-npm test
-```
-
-Tests include:
-
-* ✅ User Registration & Login
-* ✅ Account Lockout
-* ✅ JWT Authorization
-* ✅ Role-Based Access Control
-* ✅ Task CRUD
-
----
-
-## 🧠 API Documentation
-
-### **Authentication Routes**
-
-| Endpoint             | Method | Access        | Description                                        |
-| -------------------- | ------ | ------------- | -------------------------------------------------- |
-| `/api/auth/register` | POST   | Public        | Register a new user                                |
-| `/api/auth/login`    | POST   | Public        | Login user, receive access & refresh tokens        |
-| `/api/auth/refresh`  | GET    | Public        | Issue a new access token from refresh token cookie |
-| `/api/auth/logout`   | GET    | Authenticated | Blacklist refresh token and logout user            |
-
-**Example Request (Login):**
-
-```bash
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"Password123!"}'
-```
-
----
-
-### **Task Routes**
-
-| Endpoint            | Method | Role        | Description               |
-| ------------------- | ------ | ----------- | ------------------------- |
-| `/api/tasks`        | GET    | user, admin | Get all tasks (paginated) |
-| `/api/tasks`        | POST   | user, admin | Create a new task         |
-| `/api/tasks/:id`    | DELETE | admin only  | Delete a task             |
-| `/api/tasks/search` | POST   | user, admin | Search user’s tasks       |
-| `/api/tasks/filter` | POST   | user, admin | Filter user’s tasks       |
-
-**Example (Create Task):**
-
-```bash
-curl -X POST http://localhost:5000/api/tasks \
-  -H "Authorization: Bearer <ACCESS_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"My first task","description":"testing"}'
-```
-
----
-
-## 🔐 Security Mechanisms
-
-### 🧾 1. JWT Authentication
-
-* **Access Token** (short-lived): Used for protected API calls.
-* **Refresh Token** (long-lived): Stored as an **HttpOnly cookie**, renewed periodically.
-* **Rotation:** Refresh tokens are rotated on use — previous tokens are blacklisted.
-
-### 🧩 2. Role-Based Access Control (RBAC)
-
-Middleware checks the decoded JWT for user roles:
-
-```js
-// Example
-router.delete("/:id", authMiddleware, roleMiddleware(["admin"]), deleteTask);
-```
-
-### 🔄 3. Account Lockout
-
-After 3 consecutive failed login attempts, a user is **locked for 30 minutes**.
-Automatic unlock occurs after the lock period expires.
-
-### 🧼 4. Input Validation & Sanitization
-
-All inputs are validated **without external libraries**:
-
-* Length, format, and character whitelisting enforced manually.
-* Disallowed characters are stripped from user input.
-* Prevents injection attacks (e.g., NoSQL/JSON injection).
-
-Example:
-
-```js
-export const sanitizeText = (text) =>
-  text.replace(/[^a-zA-Z0-9\s.,!?_-]/g, "").trim();
-```
-
-### 🪖 5. Helmet Security Headers
-
-Enabled in `app.ts`:
-
-```js
-import helmet from "helmet";
-app.use(helmet());
-```
-
-Mitigates:
-
-* XSS
-* Clickjacking
-* MIME sniffing
-* CSP enforcement
-
-### 🧱 6. Broken Access Control Prevention
-
-* Every protected route verifies **JWT + role**.
-* Backend **rejects unauthorized actions** even if frontend UI is manipulated.
-* Example: A normal user cannot DELETE tasks even if they try via Postman.
-
----
-
-## ⚙️ Token Flow Diagram
-
-```text
- [Client]
-    │
-    │ Login (POST /auth/login)
-    ▼
- [Server]
-   → issues Access Token (short-lived)
-   → sets Refresh Token (HttpOnly cookie)
-    │
-    ▼
- [Client] (memory)
-   uses Access Token in headers for API calls
-    │
-    │ (when expired)
-    ▼
- [Server]
-   GET /auth/refresh (cookie auto-sent)
-   → validates refresh token
-   → returns new access token
-```
-
----
-
-## 🧰 Tools Used
-
-| Tool                   | Purpose                    |
-| ---------------------- | -------------------------- |
-| **Node.js (Express)**  | API framework              |
-| **MongoDB + Mongoose** | Data persistence           |
-| **bcrypt**             | Password hashing           |
-| **jsonwebtoken**       | Token generation           |
-| **helmet**             | HTTP header security       |
-| **dotenv**             | Environment config         |
-| **jest / supertest**   | Unit & integration testing |
-
----
-
-## 🧍‍♂️ Roles & Permissions Summary
-
-| Action              | User | Admin |
-| ------------------- | ---- | ----- |
-| Register            | ✅    | ✅     |
-| Login               | ✅    | ✅     |
-| Create Task         | ✅    | ✅     |
-| View Tasks          | ✅    | ✅     |
-| Delete Task         | ❌    | ✅     |
-| Search/Filter Tasks | ✅    | ✅     |
-
----
-
-## 🧩 OWASP Mitigation Summary
-
-| OWASP Code   | Vulnerability                  | Mitigation                                           |
-| ------------ | ------------------------------ | ---------------------------------------------------- |
-| **A01:2021** | Broken Access Control          | Role-based middleware + JWT verification per route   |
-| **A03:2021** | Injection                      | Manual sanitization and whitelisting of input fields |
-| **A05:2021** | Security Misconfiguration      | Helmet + environment isolation                       |
-| **A07:2021** | Identification & Auth Failures | Token expiration, blacklist, account lockout         |
-
----
-
-## 🌐 Related Repositories
-
-* **Frontend (React-Vite)** → [https://github.com/yourusername/secure-task-client](https://github.com/yourusername/secure-task-client)
-
----
-
-## 🧾 License
-
-This project is released under the **MIT License**.
-

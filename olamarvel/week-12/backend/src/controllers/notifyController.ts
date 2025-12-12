@@ -25,7 +25,7 @@ export async function notify(req: Request, res: Response) {
 
   if (isSent) {
     // If the message was accepted by the channel buffer
-    console.log(`Job ${jobId} accepted and published.`);
+    // console.log(`Job ${jobId} accepted and published.`);
     res.status(202).json({
       message: "Notification job accepted and queued.",
       jobId: jobId
@@ -35,4 +35,11 @@ export async function notify(req: Request, res: Response) {
       message: "Queue is busy, please try again."
     });
   }
+}
+
+export async function status(req:Request, res: Response) {
+  const jobId = req.params.jobId;
+  const job = await Job.findById(jobId);
+  if(!job) return res.status(404).json({message:'Job not found'});
+  res.json(job)
 }

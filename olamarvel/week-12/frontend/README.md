@@ -1,242 +1,169 @@
-# 🖥️ Secure Task Management Frontend (Week 3 SE Challenge)
+# Scalable Notification Delivery System 🚀
 
-## 🚀 Overview
+  
 
-This is the **frontend client** for the **Secure Task Management System**, built with **React + Vite + Tailwind CSS**.
-It interacts with the secure Node.js backend API to demonstrate **authentication**, **role-based access**, and **task management** in a production-grade setup.
+## 📖 Overview
 
----
+The **WaveCom Notification System** is a distributed, fault-tolerant microservices architecture designed to handle high-throughput transactional notifications (Email/SMS). Built to scale to **50,000 notifications per minute**, it leverages an asynchronous event-driven architecture to decouple message ingestion from processing.
 
-## 🧩 Features
+This repository contains:
 
-| Feature                            | Description                                                              |
-| ---------------------------------- | ------------------------------------------------------------------------ |
-| **JWT Auth Integration**           | Handles login, registration, token refresh, and logout with the backend. |
-| **Role-Based Dashboard**           | Displays different UI views and permissions for `user` and `admin`.      |
-| **Task Management**                | Create, read, search, filter, and delete tasks through secure API calls. |
-| **Session Handling**               | Automatically refreshes expired tokens using refresh token cookies.      |
-| **Secure HTTP Calls**              | All requests include the Access Token via the `Authorization` header.    |
-| **Modern UI**                      | Built with **Tailwind CSS** for sleek, responsive design.                |
-| **Form Validation & Sanitization** | Frontend-side data checks before submission.                             |
+  * **Producer API:** A high-performance Express.js entry point.
+  * **Worker Service:** A horizontally scalable consumer fleet.
+  * **Dashboard:** A React-based real-time control center for load testing and monitoring.
 
----
+-----
 
-## 🏗️ Folder Structure
+## 🏗 Architecture
 
+The system follows a **Producer-Consumer** pattern using RabbitMQ as the message broker.
+![Flow Diagram](flow.png)
+
+
+### Components & Responsibilities
+
+| Component | Responsibility | Tech Stack |
+| :--- | :--- | :--- |
+| **API Service** | Ingests requests, validates payloads, logs initial state to DB, and acts as the RabbitMQ Producer. Responds immediately with `202 Accepted`. | Node.js, Express |
+| **RabbitMQ** | Acts as a durable buffer / shock absorber. Ensures messages are ordered and persisted until processed. | RabbitMQ (AMQP) |
+| **Worker Service** | Consumes messages, handles 3rd-party API latency, manages retries, and updates final status. **Stateless and horizontally scalable.** | Node.js, amqplib |
+| **MongoDB** | Persistent storage for job status, logs, and audit trails. | MongoDB, Mongoose |
+| **Frontend** | Load generator and real-time status dashboard. | React, Vite |
+
+-----
+
+## 🛡️ Design Defense
+
+### 1\. Why this Architecture?
+
+We chose an **Asynchronous Queue-Based Architecture** over a monolithic REST API to ensure high availability.
+
+  * **Decoupling:** The API ingestion rate is not limited by the speed of the email/SMS provider. The API can accept requests in milliseconds, while the actual sending takes seconds.
+  * **Reliability:** By persisting jobs to MongoDB *before* queueing, and using RabbitMQ's **Persistent Messages**, we ensure zero data loss even if the broker crashes.
+
+### 2\. How does it handle 50,000 notifications/min?
+
+Achieving \~833 requests/second requires preventing the Node.js event loop from blocking.
+
+  * **Horizontal Scaling:** The Worker Service is designed to be run as multiple independent instances (`npm run scale:workers`). RabbitMQ's **Round-Robin Dispatch** distributes the load evenly across all active workers.
+  * **Prefetch Count:** We configured `channel.prefetch(5)` on consumers. This ensures fair distribution; a worker is never overwhelmed with too many unacknowledged messages, keeping RAM usage predictable.
+  * **Connection Pooling:** Workers maintain a persistent connection to MongoDB, eliminating the overhead of the TCP handshake for every single notification.
+
+### 3\. Fault Tolerance & Graceful Degradation
+
+  * **Message Durability:** Queues are declared `durable: true` and messages `persistent: true`.
+  * **Acknowledgement Mode:** Workers use manual acknowledgments (`channel.ack`). If a worker crashes mid-process, RabbitMQ detects the lost connection and re-queues the message for another worker.
+  * **Retry Logic:** Failed deliveries (e.g., 3rd party downtime) are handled via `channel.nack(msg, false, true)` (requeue) or routed to a Dead Letter Exchange (DLX) for delayed retry.
+
+-----
+
+## 📡 API Documentation
+
+### 1\. Send Notification
+
+**Endpoint:** `POST /api/notify`
+**Description:** Queues a new notification job.
+
+**Payload:**
+
+```json
+{
+  "type": "email",
+  "to": "user@example.com",
+  "content": "Your OTP is 1234"
+}
 ```
-frontend/
-├── src/
-│   ├── api/
-│   │   └── axiosClient.js
-│   ├── components/
-│   │   ├── AuthForm.jsx
-│   │   ├── TaskList.jsx
-│   │   ├── TaskCard.jsx
-│   │   └── Navbar.jsx
-│   ├── context/
-│   │   └── AuthContext.jsx
-│   ├── pages/
-│   │   ├── Login.jsx
-│   │   ├── Register.jsx
-│   │   ├── Dashboard.jsx
-│   │   └── AdminPanel.jsx
-│   ├── routes/
-│   │   └── ProtectedRoute.jsx
-│   ├── utils/
-│   │   └── sanitizer.js
-│   ├── App.jsx
-│   ├── main.jsx
-│   └── index.css
-├── public/
-│   └── favicon.ico
-├── package.json
-├── tailwind.config.js
-└── README.md
+
+**Response (202 Accepted):**
+
+```json
+{
+  "message": "Notification job accepted and queued.",
+  "jobId": "a1b2c3d4-..." 
+}
 ```
 
----
+### 2\. Check Status
 
-## ⚙️ Setup & Installation
+**Endpoint:** `GET /api/status/:id`
+**Description:** Polls the real-time status of a specific job.
 
-### 1️⃣ Clone the Repository
+**Response:**
+
+```json
+{
+  "jobId": "a1b2c3d4-...",
+  "status": "SENT",  // PENDING, SENT, or FAILED
+  "updatedAt": "2025-12-12T10:00:00Z"
+}
+```
+
+-----
+
+## 🗄️ Database Schema
+
+**Collection:** `jobs`
+
+```javascript
+{
+  _id: ObjectId("..."),
+  type: String,         // 'email' | 'sms'
+  to: String,
+  content: String,
+  status: String,       // Enum: ['PENDING', 'SENT', 'FAILED']
+  retries: Number,      // Default: 0
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+-----
+
+## 🚀 Setup & Usage
+
+### Prerequisites
+
+  * Node.js v18+
+  * RabbitMQ Server (Running on localhost:5672)
+  * MongoDB (Running on localhost:27017)
+
+### Installation
+
+1.  **Clone the repo:**
+    ```bash
+    git clone https://github.com/olamarvel/fundamentals-cohort1-submissions.git
+    cd olamrvel/week-12
+    ```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    cd frontend && npm install
+    ```
+
+### Running the System
+
+We use **concurrently** to spin up the entire architecture (API + 10 Workers) in one command.
 
 ```bash
-git clone https://github.com/yourusername/secure-task-client.git
-cd secure-task-client
+# In the root folder
+npm run dev:full
 ```
 
-### 2️⃣ Install Dependencies
+### Running the Load Test (Dashboard)
+
+1.  Navigate to the frontend: `cd frontend`
+2.  Start the UI: `npm run dev`
+3.  Open `http://localhost:5173`
+4.  Set **Total Requests** to `5000` and **Batch Size** to `50`.
+5.  Click **🚀 Start Test** and watch the workers drain the queue in real-time.
+
+-----
+
+### 🧪 Manual Testing (Bash)
+
+You can also run the included CLI stress tester:
 
 ```bash
-npm install
+chmod +x blast_v2.sh
+./blast_v2.sh
 ```
-
-### 3️⃣ Configure Environment Variables
-
-Create a `.env` file in the root directory with:
-
-```env
-VITE_API_BASE_URL=http://localhost:5000/api
-```
-
-### 4️⃣ Run the Development Server
-
-```bash
-npm run dev
-```
-
-The frontend will run on **[http://localhost:5173](http://localhost:5173)**
-Make sure the backend server is running on **[http://localhost:5000](http://localhost:5000)**
-
----
-
-## 🧠 How It Works
-
-### 🔐 Authentication Flow
-
-1. User registers or logs in via `/auth/register` or `/auth/login`
-2. Backend sends an **Access Token** and **Refresh Token (HttpOnly cookie)**
-3. Frontend stores the **Access Token in memory** (not localStorage)
-4. Axios interceptors handle:
-
-   * Automatic token attachment in headers
-   * Token refresh when expired
-5. User logs out → tokens revoked from backend.
-
-**Token Storage Design**
-
-* Access token: Stored in React context (volatile)
-* Refresh token: Stored securely in HttpOnly cookie (backend-managed)
-
----
-
-## 🧰 Core Components
-
-### 🪪 AuthForm.jsx
-
-Handles both registration and login:
-
-```jsx
-<AuthForm mode="login" />
-<AuthForm mode="register" />
-```
-
-### 📋 TaskList.jsx
-
-Displays user’s tasks fetched from the API.
-Includes pagination, search, and filter support.
-
-### 🧱 Navbar.jsx
-
-Dynamic navigation menu:
-
-* Shows different links for `admin` and `user`
-* Displays logged-in user’s name and logout button
-
----
-
-## 🔄 API Integration (Axios Client)
-
-`src/api/axiosClient.js`
-
-```js
-import axios from "axios";
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-  withCredentials: true, // enables refresh token cookie
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-export default api;
-```
-
----
-
-## 🔑 Routes Overview
-
-| Path         | Access       | Description                       |
-| ------------ | ------------ | --------------------------------- |
-| `/register`  | Public       | Create an account                 |
-| `/login`     | Public       | Login and receive tokens          |
-| `/dashboard` | User & Admin | View and manage tasks             |
-| `/admin`     | Admin only   | Manage all tasks and users        |
-| `*`          | -            | Redirect to login if unauthorized |
-
----
-
-## 🎨 UI / UX Design
-
-* **Framework:** React (Vite)
-* **Styling:** Tailwind CSS
-* **Theme:** Dark with soft highlights for tasks
-* **Responsive:** Fully mobile and desktop friendly
-* **Feedback:** Loading spinners, success/error toasts
-
-Example task dashboard layout:
-
-```
-+---------------------------------------+
-| Navbar                                |
-+---------------------------------------+
-| Welcome, John 👋                      |
-|                                       |
-| [ Create Task ]  [ Search 🔍 ]        |
-|                                       |
-| ▢ Task 1 – "Buy groceries"            |
-| ▢ Task 2 – "Review PRs"               |
-| ...                                   |
-+---------------------------------------+
-```
-
----
-
-## 🧪 Testing (Optional)
-
-If you include UI tests later:
-
-```bash
-npm test
-```
-
-You can use **Vitest** or **React Testing Library** for component-level tests.
-
----
-
-## 🔐 Security Mechanisms in Frontend
-
-| Concern                   | Mitigation                                                            |
-| ------------------------- | --------------------------------------------------------------------- |
-| **Token Theft**           | Access token stored in memory only. Refresh token in HttpOnly cookie. |
-| **XSS**                   | Sanitization via `sanitizeText()` before sending/printing data.       |
-| **Broken Access Control** | Role-based route guards with `ProtectedRoute.jsx`.                    |
-| **Session Hijacking**     | Backend validates refresh token rotation, invalidates on logout.      |
-| **CSRF**                  | Protected by same-site cookies + authorization header scheme.         |
-
----
-
-## 🧩 Example Login & Task Creation (cURL)
-
-You can test the backend directly from the terminal before connecting frontend:
-
-```bash
-# Register
-curl -X POST http://localhost:5000/api/auth/register -H "Content-Type: application/json" -d "{\"email\":\"test@example.com\",\"password\":\"Password123!\"}"
-
-# Login
-TOKEN=$(curl -s -X POST http://localhost:5000/api/auth/login -H "Content-Type: application/json" -d "{\"email\":\"test@example.com\",\"password\":\"Password123!\"}" | jq -r '.accessToken')
-
-# Create Task
-curl -X POST http://localhost:5000/api/tasks -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "{\"title\":\"Frontend test\",\"description\":\"Creating a task via frontend\"}"
-```
-
----
-
-## 🧾 License
-
-This project is released under the **MIT License**.
